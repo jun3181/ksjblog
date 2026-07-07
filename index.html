@@ -25,16 +25,298 @@
     <link
       rel="preload"
       as="image"
-      href="/images/site-background.webp"
-      type="image/webp"
+      href="/images/background.png"
+      type="image/png"
     />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      .static-preview {
+        min-height: 100vh;
+        color: #1f2328;
+        background: #ffffff;
+        font-family: Arial, "Noto Sans KR", "Malgun Gothic", sans-serif;
+      }
+
+      .static-preview * {
+        box-sizing: border-box;
+      }
+
+      .static-preview button,
+      .static-preview input {
+        font: inherit;
+      }
+
+      .static-banner {
+        height: clamp(200px, 20vw, 300px);
+        overflow: hidden;
+        border-bottom: 1px solid #d7d7d7;
+        background: #12351b;
+        line-height: 0;
+      }
+
+      .static-banner img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+      }
+
+      .static-background {
+        min-height: calc(100vh - clamp(200px, 20vw, 300px));
+        padding: 28px 24px 96px 200px;
+        background-color: #fff7fb;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.88)),
+          url("./public/images/background.png");
+        background-position: center top;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+      }
+
+      .static-layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 16px;
+        width: min(1600px, calc(100% - 24px));
+        margin: 0 auto 0 0;
+        align-items: start;
+      }
+
+      .static-sidebar {
+        position: sticky;
+        top: 16px;
+      }
+
+      .static-menu-title,
+      .static-board-item {
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        color: #111111;
+        background: rgba(255, 255, 255, 0.58);
+        cursor: default;
+        font-weight: 700;
+        text-align: left;
+      }
+
+      .static-menu-title {
+        min-height: 44px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(32, 32, 32, 0.14);
+        font-size: 16px;
+      }
+
+      .static-board-item {
+        min-height: 36px;
+        padding: 8px 12px 8px 30px;
+      }
+
+      .static-board-item.is-selected {
+        color: #ffffff;
+        background: #111111;
+      }
+
+      .static-panel {
+        border: 1px solid rgba(32, 32, 32, 0.14);
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 18px 45px rgba(30, 30, 30, 0.08);
+        padding: 32px;
+      }
+
+      .static-header {
+        padding-bottom: 24px;
+        border-bottom: 2px solid #111111;
+      }
+
+      .static-eyebrow {
+        margin: 0;
+        color: #666666;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .static-header h1 {
+        margin: 4px 0 0;
+        font-size: 40px;
+        letter-spacing: 0;
+      }
+
+      .static-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        gap: 18px;
+        margin-top: 22px;
+        align-items: start;
+      }
+
+      .static-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .static-card,
+      .static-login {
+        min-height: 150px;
+        border: 1px solid #dedede;
+        background: #ffffff;
+        padding: 18px;
+      }
+
+      .static-card h2,
+      .static-login strong {
+        display: block;
+        margin: 0 0 12px;
+        font-size: 1.08rem;
+      }
+
+      .static-card p {
+        margin: 0 0 8px;
+        line-height: 1.6;
+      }
+
+      .static-card small {
+        color: #666666;
+      }
+
+      .static-youtube {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border: 1px solid #111111;
+        background: #000000;
+      }
+
+      .static-youtube iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .static-visit-count {
+        font-size: 2.4rem;
+        font-weight: 900;
+      }
+
+      .static-login form {
+        display: grid;
+        gap: 10px;
+      }
+
+      .static-login input {
+        width: 100%;
+        border: 1px solid #d6d6d6;
+        padding: 10px 12px;
+      }
+
+      .static-login button {
+        border: 0;
+        color: #ffffff;
+        background: #00c73c;
+        cursor: default;
+        font-weight: 800;
+        padding: 10px 18px;
+      }
+
+      @media (max-width: 760px) {
+        .static-banner {
+          height: 112px;
+        }
+
+        .static-background {
+          min-height: calc(100vh - 112px);
+          padding: 24px 18px 72px;
+          background-attachment: scroll;
+        }
+
+        .static-layout,
+        .static-content,
+        .static-card-grid {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .static-sidebar {
+          position: static;
+        }
+
+        .static-header h1 {
+          font-size: 32px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="static-preview">
+        <header class="static-banner" aria-label="상단 배너">
+          <img src="./public/images/forest-banner.png" alt="숲길 배너" />
+        </header>
+        <main class="static-background">
+          <div class="static-layout">
+            <aside class="static-sidebar" aria-label="왼쪽 메뉴">
+              <button class="static-menu-title" type="button">메인</button>
+              <button class="static-menu-title" type="button">1. 게시판</button>
+              <button class="static-board-item is-selected" type="button">- 일상 게시판</button>
+              <button class="static-board-item" type="button">- 헬스</button>
+              <button class="static-board-item" type="button">- 개발 게시판</button>
+              <button class="static-menu-title" type="button">2. 다른 목록</button>
+              <button class="static-menu-title" type="button">3. 다른 목록</button>
+            </aside>
+            <section class="static-panel" aria-labelledby="static-main-title">
+              <div class="static-header">
+                <p class="static-eyebrow">Stack Chat</p>
+                <h1 id="static-main-title">메인</h1>
+              </div>
+              <div class="static-content">
+                <div class="static-card-grid">
+                  <article class="static-card">
+                    <h2>새로운 게시판</h2>
+                    <p>새 게시글이 없습니다.</p>
+                  </article>
+                  <article class="static-card">
+                    <h2>추천노래</h2>
+                    <div class="static-youtube">
+                      <iframe
+                        src="https://www.youtube.com/embed/olzR1p2FhzY"
+                        title="오늘의 추천노래"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen
+                      ></iframe>
+                    </div>
+                  </article>
+                  <article class="static-card">
+                    <h2>게임 업데이트</h2>
+                    <p>새 게시판과 댓글 기능 준비 중</p>
+                    <small>업데이트 소식은 이 칸에 표시됩니다.</small>
+                  </article>
+                  <article class="static-card">
+                    <h2>방문자 수</h2>
+                    <p class="static-visit-count">1</p>
+                    <small>이 브라우저 기준 방문 집계</small>
+                  </article>
+                </div>
+                <aside class="static-login" aria-label="로그인">
+                  <strong>로그인</strong>
+                  <form>
+                    <input placeholder="아이디" aria-label="아이디" />
+                    <input placeholder="비밀번호" aria-label="비밀번호" type="password" />
+                    <button type="button">로그인</button>
+                  </form>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
