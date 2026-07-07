@@ -99,7 +99,7 @@
         border-radius: 0;
         color: #111111;
         background: rgba(255, 255, 255, 0.58);
-        cursor: default;
+        cursor: pointer;
         font-weight: 700;
         text-align: left;
       }
@@ -219,9 +219,172 @@
         border: 0;
         color: #ffffff;
         background: #00c73c;
-        cursor: default;
+        cursor: pointer;
         font-weight: 800;
         padding: 10px 18px;
+      }
+
+      .static-primary-button,
+      .static-publish-button {
+        border: 0;
+        color: #ffffff;
+        background: #00c73c;
+        cursor: pointer;
+        font-weight: 800;
+        padding: 10px 18px;
+      }
+
+      .static-primary-button.is-locked {
+        background: #777777;
+      }
+
+      .static-text-button {
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      .static-delete-button {
+        border: 1px solid #e15b64;
+        color: #c92a35;
+        background: #ffffff;
+        cursor: pointer;
+        font-weight: 800;
+        padding: 9px 13px;
+      }
+
+      .static-delete-button:hover,
+      .static-delete-button:focus-visible {
+        color: #ffffff;
+        background: #c92a35;
+      }
+
+      .static-board-header,
+      .static-detail-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: flex-start;
+      }
+
+      .static-board-header {
+        padding-bottom: 24px;
+        border-bottom: 2px solid #111111;
+      }
+
+      .static-board-header h1,
+      .static-detail h1 {
+        margin: 4px 0 8px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        letter-spacing: 0;
+      }
+
+      .static-post-list,
+      .static-comment-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .static-post-card,
+      .static-comment-item {
+        border: 1px solid #dedede;
+        background: #ffffff;
+        padding: 16px 18px;
+      }
+
+      .static-post-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .static-post-card.without-actions {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .static-post-open {
+        display: grid;
+        gap: 7px;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .static-post-open strong {
+        font-size: 1.15rem;
+      }
+
+      .static-post-open small,
+      .static-meta,
+      .static-comment-item small {
+        color: #777777;
+      }
+
+      .static-empty {
+        margin-top: 22px;
+        border: 1px solid #dedede;
+        background: #ffffff;
+        padding: 18px;
+      }
+
+      .static-detail {
+        line-height: 1.8;
+      }
+
+      .static-post-content {
+        margin-top: 24px;
+        white-space: pre-wrap;
+        font-size: 1.08rem;
+      }
+
+      .static-comment-section {
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 2px solid #111111;
+      }
+
+      .static-form {
+        display: grid;
+        gap: 10px;
+      }
+
+      .static-form input,
+      .static-form textarea,
+      .static-editor input,
+      .static-editor textarea {
+        width: 100%;
+        border: 1px solid #d6d6d6;
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      .static-form textarea,
+      .static-editor textarea {
+        min-height: 130px;
+        resize: vertical;
+      }
+
+      .static-login-error {
+        margin: 0;
+        color: #c92a35;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .static-editor {
+        display: grid;
+        gap: 14px;
+      }
+
+      .static-editor-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
       }
 
       @media (max-width: 760px) {
@@ -244,6 +407,13 @@
 
         .static-sidebar {
           position: static;
+        }
+
+        .static-board-header,
+        .static-detail-actions,
+        .static-post-card {
+          grid-template-columns: 1fr;
+          flex-direction: column;
         }
 
         .static-header h1 {
@@ -317,6 +487,439 @@
         </main>
       </div>
     </div>
+    <script>
+      (() => {
+        if (window.location.protocol !== "file:") return;
+
+        const root = document.getElementById("root");
+        const categories = [
+          { id: "daily", label: "일상 게시판" },
+          { id: "health", label: "헬스" },
+          { id: "dev", label: "개발 게시판" },
+        ];
+        const initialPosts = [
+          {
+            id: 101,
+            categoryId: "daily",
+            title: "오늘의 작은 기록",
+            author: "관리자",
+            createdAt: "2026.07.07",
+            excerpt: "새 게시판에 남겨둔 첫 번째 일상 기록입니다.",
+            content: "사진과 글을 함께 올릴 수 있는 게시판을 준비하고 있습니다.",
+          },
+          {
+            id: 102,
+            categoryId: "health",
+            title: "초보자를 위한 전신 루틴",
+            author: "트레이너",
+            createdAt: "2026.07.07",
+            excerpt: "가볍게 시작할 수 있는 운동 루틴 메모입니다.",
+            content: "운동 전후 스트레칭을 충분히 하고 자신의 컨디션에 맞춰 횟수를 조절하세요.",
+          },
+          {
+            id: 103,
+            categoryId: "dev",
+            title: "React 게시판 에디터 메모",
+            author: "개발자",
+            createdAt: "2026.07.07",
+            excerpt: "글쓰기, 이미지, 그림 기능을 한 화면에서 다루는 실험입니다.",
+            content: "서버로 열면 React 앱이 실행되고, 파일로 직접 열면 이 가벼운 HTML 모드가 실행됩니다.",
+          },
+        ];
+
+        const POSTS_STORAGE_KEY = "stack-chat-board-posts";
+        const AUTH_STORAGE_KEY = "stack-chat-authenticated";
+        const VISIT_STORAGE_KEY = "stack-chat-visit-count";
+        const VISIT_SESSION_KEY = "stack-chat-visited-session";
+        const LOGIN_ID = "asdf";
+        const LOGIN_PASSWORD = "0109";
+
+        let posts = loadPosts();
+        let isLoggedIn = window.localStorage.getItem(AUTH_STORAGE_KEY) === "true";
+        let path = getHashPath();
+
+        if (window.sessionStorage.getItem(VISIT_SESSION_KEY) !== "true") {
+          const currentCount = Number(window.localStorage.getItem(VISIT_STORAGE_KEY)) || 0;
+          window.localStorage.setItem(VISIT_STORAGE_KEY, String(currentCount + 1));
+          window.sessionStorage.setItem(VISIT_SESSION_KEY, "true");
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+        }
+
+        function loadPosts() {
+          try {
+            const storedPosts = JSON.parse(window.localStorage.getItem(POSTS_STORAGE_KEY) || "null");
+            return Array.isArray(storedPosts) ? storedPosts : initialPosts;
+          } catch {
+            return initialPosts;
+          }
+        }
+
+        function savePosts() {
+          window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
+        }
+
+        function getHashPath() {
+          const hashPath = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+          return hashPath.startsWith("/") ? hashPath : "/";
+        }
+
+        function navigate(nextPath) {
+          path = nextPath;
+          window.location.hash = encodeURIComponent(nextPath);
+          render();
+        }
+
+        function getCategory(categoryId) {
+          return categories.find((category) => category.id === categoryId) || categories[0];
+        }
+
+        function getActiveCategoryId() {
+          const categoryFromPath = path.match(/^\/boards\/([^/]+)/)?.[1];
+          const detailId = path.match(/^\/(\d+)/)?.[1];
+          return categoryFromPath || posts.find((post) => String(post.id) === detailId)?.categoryId || "daily";
+        }
+
+        function getVisitCount() {
+          return Number(window.localStorage.getItem(VISIT_STORAGE_KEY)) || 1;
+        }
+
+        function renderSidebar(activeCategoryId) {
+          return `
+            <aside class="static-sidebar" aria-label="왼쪽 메뉴">
+              <button class="static-menu-title" type="button" data-nav="/">메인</button>
+              <button class="static-menu-title" type="button" data-nav="/boards/daily">1. 게시판</button>
+              ${categories.map((category) => `
+                <button class="static-board-item ${category.id === activeCategoryId ? "is-selected" : ""}" type="button" data-nav="/boards/${category.id}">
+                  - ${escapeHtml(category.label)}
+                </button>
+              `).join("")}
+              <button class="static-menu-title" type="button" data-placeholder="다른 목록은 준비 중입니다.">2. 다른 목록</button>
+              <button class="static-menu-title" type="button" data-placeholder="다른 목록은 준비 중입니다.">3. 다른 목록</button>
+            </aside>
+          `;
+        }
+
+        function renderLoginPanel() {
+          if (isLoggedIn) {
+            return `
+              <aside class="static-login" aria-label="로그인 정보">
+                <strong>로그인됨</strong>
+                <p>게시글 작성과 삭제가 가능합니다.</p>
+                <button type="button" data-action="logout">로그아웃</button>
+              </aside>
+            `;
+          }
+
+          return `
+            <aside class="static-login" aria-label="로그인">
+              <strong>로그인</strong>
+              <form class="static-form" data-form="login">
+                <input name="loginId" placeholder="아이디" aria-label="아이디" autocomplete="username" />
+                <input name="password" placeholder="비밀번호" aria-label="비밀번호" type="password" autocomplete="current-password" />
+                <p class="static-login-error" data-login-error hidden>아이디 또는 비밀번호가 맞지 않습니다.</p>
+                <button type="submit">로그인</button>
+              </form>
+            </aside>
+          `;
+        }
+
+        function renderMainPage() {
+          const latestPosts = posts.slice(0, 3);
+
+          return `
+            <section class="static-panel" aria-labelledby="static-main-title">
+              <div class="static-header">
+                <p class="static-eyebrow">Stack Chat</p>
+                <h1 id="static-main-title">메인</h1>
+              </div>
+              <div class="static-content">
+                <div class="static-card-grid">
+                  <article class="static-card">
+                    <h2>새로운 게시판</h2>
+                    <div class="static-post-list">
+                      ${latestPosts.length ? latestPosts.map((post) => `
+                        <button class="static-post-open" type="button" data-nav="/${post.id}">
+                          <strong>${escapeHtml(post.title)}</strong>
+                        </button>
+                      `).join("") : "<p>새 게시글이 없습니다.</p>"}
+                    </div>
+                  </article>
+                  <article class="static-card">
+                    <h2>추천노래</h2>
+                    <div class="static-youtube">
+                      <iframe
+                        src="https://www.youtube.com/embed/olzR1p2FhzY"
+                        title="오늘의 추천노래"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen
+                      ></iframe>
+                    </div>
+                  </article>
+                  <article class="static-card">
+                    <h2>게임 업데이트</h2>
+                    <p>새 게시판과 댓글 기능 준비 중</p>
+                    <small>업데이트 소식은 이 칸에 표시됩니다.</small>
+                  </article>
+                  <article class="static-card">
+                    <h2>방문자 수</h2>
+                    <p class="static-visit-count">${getVisitCount().toLocaleString("ko-KR")}</p>
+                    <small>이 브라우저 기준 방문 집계</small>
+                  </article>
+                </div>
+                ${renderLoginPanel()}
+              </div>
+            </section>
+          `;
+        }
+
+        function renderBoardListPage(category) {
+          const categoryPosts = posts.filter((post) => post.categoryId === category.id);
+
+          return `
+            <section class="static-panel" aria-labelledby="static-board-title">
+              <div class="static-board-header">
+                <div>
+                  <p class="static-eyebrow">게시판 목록</p>
+                  <h1 id="static-board-title">${escapeHtml(category.label)}</h1>
+                </div>
+                <button class="static-primary-button ${isLoggedIn ? "" : "is-locked"}" type="button" data-action="new-post" data-category-id="${category.id}">
+                  게시글 작성
+                </button>
+              </div>
+              ${categoryPosts.length ? `
+                <div class="static-post-list">
+                  ${categoryPosts.map((post) => `
+                    <article class="static-post-card ${isLoggedIn ? "" : "without-actions"}">
+                      <button class="static-post-open" type="button" data-nav="/${post.id}">
+                        <strong>${escapeHtml(post.title)}</strong>
+                        <span>${escapeHtml(post.excerpt || "")}</span>
+                        <small>${escapeHtml(post.author || "익명")} · ${escapeHtml(post.createdAt || "")}</small>
+                      </button>
+                      ${isLoggedIn ? `<button class="static-delete-button" type="button" data-action="delete-post" data-post-id="${post.id}">삭제</button>` : ""}
+                    </article>
+                  `).join("")}
+                </div>
+              ` : `<p class="static-empty">아직 게시글이 없습니다.</p>`}
+            </section>
+          `;
+        }
+
+        function renderDetailPage(post) {
+          const comments = Array.isArray(post.comments) ? post.comments : [];
+
+          return `
+            <article class="static-panel static-detail">
+              <div class="static-detail-actions">
+                <button class="static-text-button" type="button" data-nav="/boards/${post.categoryId}">목록으로</button>
+                ${isLoggedIn ? `<button class="static-delete-button" type="button" data-action="delete-post" data-post-id="${post.id}">삭제</button>` : ""}
+              </div>
+              <h1>${escapeHtml(post.title)}</h1>
+              <p class="static-meta">${escapeHtml(post.author || "익명")} · ${escapeHtml(post.createdAt || "")}</p>
+              <p class="static-post-content">${escapeHtml(post.content || post.excerpt || "")}</p>
+              <section class="static-comment-section" aria-label="댓글">
+                <h2>댓글</h2>
+                <form class="static-form" data-form="comment" data-post-id="${post.id}">
+                  <input name="nickname" placeholder="닉네임" aria-label="댓글 닉네임" />
+                  <textarea name="comment" placeholder="댓글을 입력하세요" aria-label="댓글 입력"></textarea>
+                  <button class="static-publish-button" type="submit">댓글 등록</button>
+                </form>
+                <div class="static-comment-list">
+                  ${comments.length ? comments.map((comment) => `
+                    <article class="static-comment-item">
+                      <p>${escapeHtml(comment.content)}</p>
+                      <small>${escapeHtml(comment.nickname || "익명")} · ${escapeHtml(comment.createdAt || "")}</small>
+                    </article>
+                  `).join("") : `<p class="static-empty">아직 댓글이 없습니다.</p>`}
+                </div>
+              </section>
+            </article>
+          `;
+        }
+
+        function renderEditorPage(category) {
+          if (!isLoggedIn) {
+            return `
+              <section class="static-panel">
+                <p class="static-eyebrow">로그인 필요</p>
+                <h1>게시글 작성은 로그인해야 가능합니다.</h1>
+                <button class="static-primary-button" type="button" data-nav="/">메인으로</button>
+              </section>
+            `;
+          }
+
+          return `
+            <section class="static-panel" aria-labelledby="static-editor-title">
+              <div class="static-board-header">
+                <div>
+                  <p class="static-eyebrow">${escapeHtml(category.label)}</p>
+                  <h1 id="static-editor-title">게시글 작성</h1>
+                </div>
+                <button class="static-text-button" type="button" data-nav="/boards/${category.id}">취소</button>
+              </div>
+              <form class="static-editor" data-form="post" data-category-id="${category.id}">
+                <input name="title" placeholder="제목" aria-label="제목" required />
+                <textarea name="content" placeholder="내용을 입력하세요" aria-label="내용" required></textarea>
+                <div class="static-editor-actions">
+                  <button class="static-publish-button" type="submit">발행</button>
+                </div>
+              </form>
+            </section>
+          `;
+        }
+
+        function renderPage() {
+          const categoryId = getActiveCategoryId();
+          const category = getCategory(categoryId);
+          const detailId = path.match(/^\/(\d+)/)?.[1];
+
+          if (path === "/") return renderMainPage();
+          if (path.endsWith("/new")) return renderEditorPage(category);
+          if (detailId) {
+            const post = posts.find((item) => String(item.id) === detailId);
+            return post ? renderDetailPage(post) : renderBoardListPage(category);
+          }
+          return renderBoardListPage(category);
+        }
+
+        function render() {
+          const activeCategoryId = getActiveCategoryId();
+          root.innerHTML = `
+            <div class="static-preview">
+              <header class="static-banner" aria-label="상단 배너">
+                <img src="./public/images/forest-banner.png" alt="숲길 배너" />
+              </header>
+              <main class="static-background">
+                <div class="static-layout">
+                  ${renderSidebar(activeCategoryId)}
+                  ${renderPage()}
+                </div>
+              </main>
+            </div>
+          `;
+        }
+
+        root.addEventListener("click", (event) => {
+          const button = event.target.closest("button");
+          if (!button) return;
+
+          const nextPath = button.dataset.nav;
+          if (nextPath) {
+            navigate(nextPath);
+            return;
+          }
+
+          if (button.dataset.placeholder) {
+            window.alert(button.dataset.placeholder);
+            return;
+          }
+
+          if (button.dataset.action === "logout") {
+            isLoggedIn = false;
+            window.localStorage.setItem(AUTH_STORAGE_KEY, "false");
+            render();
+            return;
+          }
+
+          if (button.dataset.action === "new-post") {
+            if (!isLoggedIn) {
+              window.alert("로그인 후 게시글을 작성할 수 있습니다.");
+              return;
+            }
+            navigate(`/boards/${button.dataset.categoryId}/new`);
+            return;
+          }
+
+          if (button.dataset.action === "delete-post") {
+            const postId = Number(button.dataset.postId);
+            const post = posts.find((item) => item.id === postId);
+            if (!post) return;
+            if (!window.confirm(`"${post.title}" 게시글을 삭제할까요?`)) return;
+            posts = posts.filter((item) => item.id !== postId);
+            savePosts();
+            navigate(`/boards/${post.categoryId}`);
+          }
+        });
+
+        root.addEventListener("submit", (event) => {
+          const form = event.target.closest("form");
+          if (!form) return;
+          event.preventDefault();
+
+          const formData = new FormData(form);
+
+          if (form.dataset.form === "login") {
+            const loginId = String(formData.get("loginId") || "").trim();
+            const password = String(formData.get("password") || "");
+            const success = loginId === LOGIN_ID && password === LOGIN_PASSWORD;
+            const error = form.querySelector("[data-login-error]");
+            if (!success) {
+              if (error) error.hidden = false;
+              return;
+            }
+            isLoggedIn = true;
+            window.localStorage.setItem(AUTH_STORAGE_KEY, "true");
+            render();
+            return;
+          }
+
+          if (form.dataset.form === "comment") {
+            const postId = Number(form.dataset.postId);
+            const content = String(formData.get("comment") || "").trim();
+            if (!content) return;
+
+            posts = posts.map((post) => {
+              if (post.id !== postId) return post;
+              const nextComment = {
+                id: Date.now(),
+                nickname: String(formData.get("nickname") || "").trim() || "익명",
+                content,
+                createdAt: new Date().toLocaleString("ko-KR"),
+              };
+              return { ...post, comments: [...(Array.isArray(post.comments) ? post.comments : []), nextComment] };
+            });
+            savePosts();
+            render();
+            return;
+          }
+
+          if (form.dataset.form === "post") {
+            const title = String(formData.get("title") || "").trim();
+            const content = String(formData.get("content") || "").trim();
+            if (!title || !content) return;
+
+            const post = {
+              id: Date.now(),
+              categoryId: form.dataset.categoryId || "daily",
+              title,
+              author: "작성자",
+              createdAt: new Date().toLocaleDateString("ko-KR"),
+              excerpt: content.slice(0, 56),
+              content,
+              comments: [],
+            };
+            posts = [post, ...posts];
+            savePosts();
+            navigate(`/${post.id}`);
+          }
+        });
+
+        window.addEventListener("hashchange", () => {
+          path = getHashPath();
+          render();
+        });
+
+        render();
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
