@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const categories = [
-  { id: "daily", label: "일상 게시판" },
-  { id: "health", label: "헬스" },
-  { id: "dev", label: "개발 게시판" },
-  { id: "webtoon", label: "웹툰" },
+const defaultCategories = [
+  { id: "daily", label: "일상 게시판", groupType: "boards" },
+  { id: "health", label: "헬스", groupType: "boards" },
+  { id: "dev", label: "개발 게시판", groupType: "boards" },
+  { id: "webtoon", label: "웹툰", groupType: "webtoon" },
 ];
 
 const menuGroups = [
@@ -36,6 +36,7 @@ const youtubeRecommendationLinks = [
 ];
 
 const POSTS_STORAGE_KEY = "stack-chat-board-posts";
+const CATEGORIES_STORAGE_KEY = "stack-chat-categories";
 const AUTH_STORAGE_KEY = "stack-chat-authenticated";
 const VISIT_STORAGE_KEY = "stack-chat-visit-count";
 const VISIT_SESSION_KEY = "stack-chat-visited-session";
@@ -174,6 +175,18 @@ function loadStoredPosts() {
   }
 }
 
+function loadStoredCategories() {
+  const storedCategories = window.localStorage.getItem(CATEGORIES_STORAGE_KEY);
+  if (!storedCategories) return defaultCategories;
+
+  try {
+    const parsedCategories = JSON.parse(storedCategories);
+    return Array.isArray(parsedCategories) ? parsedCategories : defaultCategories;
+  } catch {
+    return defaultCategories;
+  }
+}
+
 const APP_BASE_PATH = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 
 function normalizePath(pathname) {
@@ -207,7 +220,7 @@ function usePath() {
   return { path, navigate };
 }
 
-function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
+function BoardSidebar({ activeCategoryId, categories, isHomeActive, isLoggedIn, navigate, onCreateCategory }) {
   return (
     <aside className="board-sidebar" aria-label="왼쪽 메뉴">
       <nav className="menu-list" aria-label="전체 목록">
@@ -217,7 +230,12 @@ function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
         {menuGroups.map((group) => (
           <section className="menu-group" key={`${group.id}-${group.label}`}>
             <button
-              className={`menu-title ${group.type === "webtoon" && activeCategoryId === "webtoon" ? "is-selected" : ""}`}
+              className={`menu-title ${
+                group.type === "webtoon"
+                && categories.some((category) => category.id === activeCategoryId && category.groupType === "webtoon")
+                  ? "is-selected"
+                  : ""
+              }`}
               type="button"
               onClick={() => {
                 if (group.type === "boards") navigate("/boards/daily");
@@ -227,9 +245,11 @@ function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
               <span>{group.id}. {group.label}</span>
             </button>
 
-            {group.type === "boards" && (
+            {(group.type === "boards" || group.type === "webtoon") && (
               <div className="board-list" aria-label="게시판 세부 목록">
-                {categories.filter((category) => category.id !== "webtoon").map((category) => (
+                {categories
+                  .filter((category) => category.groupType === group.type && category.id !== "webtoon")
+                  .map((category) => (
                   <button
                     key={category.id}
                     className={`board-list-item ${!isHomeActive && category.id === activeCategoryId ? "is-selected" : ""}`}
@@ -239,6 +259,11 @@ function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
                     <span>- {category.label}</span>
                   </button>
                 ))}
+                {isLoggedIn && (
+                  <button className="create-category-button" type="button" onClick={() => onCreateCategory(group.type)}>
+                    + 세부 목록 만들기
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -248,7 +273,7 @@ function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
   );
 }
 
-function BlogLayout({ children, activeCategoryId, isHomeActive, navigate }) {
+function BlogLayout({ children, activeCategoryId, categories, isHomeActive, isLoggedIn, navigate, onCreateCategory }) {
   return (
     <div className="blog-page">
       <header className="blog-banner" aria-label="그림 배너">
@@ -256,7 +281,14 @@ function BlogLayout({ children, activeCategoryId, isHomeActive, navigate }) {
       </header>
       <main className="blog-background">
         <div className="content-layout">
-          <BoardSidebar activeCategoryId={activeCategoryId} isHomeActive={isHomeActive} navigate={navigate} />
+          <BoardSidebar
+            activeCategoryId={activeCategoryId}
+            categories={categories}
+            isHomeActive={isHomeActive}
+            isLoggedIn={isLoggedIn}
+            navigate={navigate}
+            onCreateCategory={onCreateCategory}
+          />
           <div className="route-panel">{children}</div>
         </div>
       </main>
@@ -336,8 +368,11 @@ function RecommendedSongCard({ song }) {
   );
 }
 
-function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, recommendationDateKey }) {
-  const latestPosts = posts.filter((post) => post.categoryId !== "webtoon").slice(0, 3);
+function MainPage({ posts, categories, navigate, isLoggedIn, onLogin, onLogout, visitCount, recommendationDateKey }) {
+  const webtoonCategoryIds = new Set(
+    categories.filter((category) => category.groupType === "webtoon").map((category) => category.id),
+  );
+  const latestPosts = posts.filter((post) => !webtoonCategoryIds.has(post.categoryId)).slice(0, 3);
   const recommendedSong = useMemo(() => getDailyRecommendedSong(recommendationDateKey), [recommendationDateKey]);
   const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히";
 
@@ -388,7 +423,7 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
 }
 
 function BoardListPage({ category, posts, navigate, onDeletePost, isLoggedIn }) {
-  const isWebtoon = category.id === "webtoon";
+  const isWebtoon = category.groupType === "webtoon";
 
   function openEditor() {
     if (!isLoggedIn) {
@@ -982,7 +1017,7 @@ function EditorPage({ category, onCreate, navigate }) {
   return (
     <section className={`editor-page ${isDrawingActive ? "is-paint-mode" : ""} ${hasBoardDrawing ? "has-board-drawing" : ""}`} aria-labelledby="editor-title">
       <div className="editor-topbar">
-        <strong>{category.id === "webtoon" ? "웹툰" : "게시판"}</strong>
+        <strong>{category.groupType === "webtoon" ? "웹툰" : "게시판"}</strong>
         <div>
           <button className="text-button" type="button" onClick={() => navigate(`/boards/${category.id}`)}>취소</button>
           <button className="publish-button" type="button" onClick={submitPost}>발행</button>
@@ -1064,6 +1099,7 @@ function LoginRequiredPage({ navigate }) {
 export default function App() {
   const { path, navigate } = usePath();
   const [posts, setPosts] = useState(loadStoredPosts);
+  const [categories, setCategories] = useState(loadStoredCategories);
   const [isLoggedIn, setIsLoggedIn] = useState(() => window.localStorage.getItem(AUTH_STORAGE_KEY) === "true");
   const [visitCount, setVisitCount] = useState(getInitialVisitCount);
   const [recommendationDateKey, setRecommendationDateKey] = useState(getTodayKey);
@@ -1071,6 +1107,10 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
   }, [posts]);
+
+  useEffect(() => {
+    window.localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+  }, [categories]);
 
   useEffect(() => {
     window.localStorage.setItem(AUTH_STORAGE_KEY, isLoggedIn ? "true" : "false");
@@ -1141,6 +1181,20 @@ export default function App() {
     setIsLoggedIn(false);
   }, []);
 
+  const createCategory = useCallback((groupType) => {
+    const label = window.prompt("새 세부 목록 이름을 입력하세요.");
+    const trimmedLabel = label?.trim();
+    if (!trimmedLabel) return;
+
+    const category = {
+      id: `${groupType}-${Date.now()}`,
+      label: trimmedLabel,
+      groupType,
+    };
+    setCategories((currentCategories) => [...currentCategories, category]);
+    navigate(`/boards/${category.id}`);
+  }, [navigate]);
+
   const deletePost = useCallback((post) => {
     const confirmed = window.confirm(`"${post.title}" 게시글을 삭제할까요?`);
     if (!confirmed) return;
@@ -1164,7 +1218,7 @@ export default function App() {
   }, []);
 
   const page = useMemo(() => {
-    if (path === "/") return <MainPage posts={posts} navigate={navigate} isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} visitCount={visitCount} recommendationDateKey={recommendationDateKey} />;
+    if (path === "/") return <MainPage posts={posts} categories={categories} navigate={navigate} isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} visitCount={visitCount} recommendationDateKey={recommendationDateKey} />;
     if (path.endsWith("/new")) {
       if (!isLoggedIn) return <LoginRequiredPage navigate={navigate} />;
       return <EditorPage category={activeCategory} onCreate={(post) => setPosts((current) => [post, ...current])} navigate={navigate} />;
@@ -1174,7 +1228,18 @@ export default function App() {
       return post ? <PostDetailPage post={post} navigate={navigate} onDeletePost={deletePost} onAddComment={addComment} isLoggedIn={isLoggedIn} /> : <BoardListPage category={activeCategory} posts={posts.filter((postItem) => postItem.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
     }
     return <BoardListPage category={activeCategory} posts={posts.filter((post) => post.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
-  }, [activeCategory, addComment, deletePost, detailId, handleLogin, handleLogout, isLoggedIn, navigate, path, posts, recommendationDateKey, visitCount]);
+  }, [activeCategory, addComment, categories, deletePost, detailId, handleLogin, handleLogout, isLoggedIn, navigate, path, posts, recommendationDateKey, visitCount]);
 
-  return <BlogLayout activeCategoryId={activeCategory.id} isHomeActive={path === "/"} navigate={navigate}>{page}</BlogLayout>;
+  return (
+    <BlogLayout
+      activeCategoryId={activeCategory.id}
+      categories={categories}
+      isHomeActive={path === "/"}
+      isLoggedIn={isLoggedIn}
+      navigate={navigate}
+      onCreateCategory={createCategory}
+    >
+      {page}
+    </BlogLayout>
+  );
 }
