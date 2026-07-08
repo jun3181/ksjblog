@@ -1,0 +1,5 @@
+설치
+winget install OpenJS.NodeJS.LTS
+
+npm run dev
+http://127.0.0.1:5173/
