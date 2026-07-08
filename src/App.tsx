@@ -37,6 +37,8 @@ const youtubeRecommendationLinks = [
 
 const POSTS_STORAGE_KEY = "stack-chat-board-posts";
 const CATEGORIES_STORAGE_KEY = "stack-chat-categories";
+const POSTS_DB_NAME = "stack-chat-content";
+const POSTS_DB_STORE = "posts";
 const AUTH_STORAGE_KEY = "stack-chat-authenticated";
 const VISIT_STORAGE_KEY = "stack-chat-visit-count";
 const VISIT_SESSION_KEY = "stack-chat-visited-session";
@@ -173,6 +175,52 @@ function loadStoredPosts() {
   } catch {
     return [];
   }
+}
+
+function openPostsDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(POSTS_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(POSTS_DB_STORE)) {
+        request.result.createObjectStore(POSTS_DB_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadPostsFromDatabase() {
+  const database = await openPostsDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(POSTS_DB_STORE, "readonly")
+      .objectStore(POSTS_DB_STORE)
+      .get("all");
+    request.onsuccess = () => {
+      database.close();
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      database.close();
+      reject(request.error);
+    };
+  });
+}
+
+async function savePostsToDatabase(posts) {
+  const database = await openPostsDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(POSTS_DB_STORE, "readwrite");
+    transaction.objectStore(POSTS_DB_STORE).put(posts, "all");
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error);
+    };
+  });
 }
 
 function loadStoredCategories() {
@@ -1115,14 +1163,36 @@ function LoginRequiredPage({ navigate }) {
 export default function App() {
   const { path, navigate } = usePath();
   const [posts, setPosts] = useState(loadStoredPosts);
+  const [isPostStorageReady, setIsPostStorageReady] = useState(false);
   const [categories, setCategories] = useState(loadStoredCategories);
   const [isLoggedIn, setIsLoggedIn] = useState(() => window.localStorage.getItem(AUTH_STORAGE_KEY) === "true");
   const [visitCount, setVisitCount] = useState(getInitialVisitCount);
   const [recommendationDateKey, setRecommendationDateKey] = useState(getTodayKey);
 
   useEffect(() => {
-    window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
-  }, [posts]);
+    let isMounted = true;
+
+    loadPostsFromDatabase()
+      .then((storedPosts) => {
+        if (!isMounted) return;
+        if (Array.isArray(storedPosts)) setPosts(storedPosts);
+        setIsPostStorageReady(true);
+      })
+      .catch(() => {
+        if (isMounted) setIsPostStorageReady(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPostStorageReady) return;
+    savePostsToDatabase(posts).catch(() => {
+      window.alert("게시글을 저장하지 못했습니다. 사진 용량을 줄여 다시 시도해 주세요.");
+    });
+  }, [isPostStorageReady, posts]);
 
   useEffect(() => {
     window.localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
