@@ -130,6 +130,7 @@ canvas {
 
 .menu-title:hover,
 .menu-title:focus-visible,
+.menu-title.is-selected,
 .board-list-item:hover,
 .board-list-item:focus-visible,
 .board-list-item.is-selected {

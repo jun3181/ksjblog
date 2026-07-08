@@ -112,6 +112,17 @@ function getInitialVisitCount() {
   return Number.isFinite(storedCount) ? storedCount : 0;
 }
 
+async function recordVisit() {
+  const response = await fetch("/api/visits", { method: "POST" });
+  if (!response.ok) throw new Error("Failed to record visit");
+
+  const result = await response.json();
+  const count = Number(result.count);
+  if (!Number.isFinite(count)) throw new Error("Invalid visit count");
+
+  return count;
+}
+
 function getTodayKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -222,11 +233,11 @@ function usePath() {
   return { path, navigate };
 }
 
-function BoardSidebar({ activeCategoryId, navigate }) {
+function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
   return (
     <aside className="board-sidebar" aria-label="왼쪽 메뉴">
       <nav className="menu-list" aria-label="전체 목록">
-        <button className="menu-title home-menu-button" type="button" onClick={() => navigate("/")}>
+        <button className={`menu-title home-menu-button ${isHomeActive ? "is-selected" : ""}`} type="button" onClick={() => navigate("/")}>
           <span>메인</span>
         </button>
         {menuGroups.map((group) => (
@@ -244,7 +255,7 @@ function BoardSidebar({ activeCategoryId, navigate }) {
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`board-list-item ${category.id === activeCategoryId ? "is-selected" : ""}`}
+                    className={`board-list-item ${!isHomeActive && category.id === activeCategoryId ? "is-selected" : ""}`}
                     type="button"
                     onClick={() => navigate(`/boards/${category.id}`)}
                   >
@@ -260,7 +271,7 @@ function BoardSidebar({ activeCategoryId, navigate }) {
   );
 }
 
-function BlogLayout({ children, activeCategoryId, navigate }) {
+function BlogLayout({ children, activeCategoryId, isHomeActive, navigate }) {
   return (
     <div className="blog-page">
       <header className="blog-banner" aria-label="그림 배너">
@@ -268,7 +279,7 @@ function BlogLayout({ children, activeCategoryId, navigate }) {
       </header>
       <main className="blog-background">
         <div className="content-layout">
-          <BoardSidebar activeCategoryId={activeCategoryId} navigate={navigate} />
+          <BoardSidebar activeCategoryId={activeCategoryId} isHomeActive={isHomeActive} navigate={navigate} />
           <div className="route-panel">{children}</div>
         </div>
       </main>
@@ -377,7 +388,7 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
           <article className="main-card">
             <h3>방문자 수</h3>
             <p className="visit-count">{visitCount.toLocaleString("ko-KR")}</p>
-            <small>이 브라우저 기준 방문 집계</small>
+            <small>같은 IP는 한 번만 집계</small>
           </article>
         </div>
         <LoginPanel isLoggedIn={isLoggedIn} onLogin={onLogin} onLogout={onLogout} />
@@ -1074,14 +1085,28 @@ export default function App() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (window.sessionStorage.getItem(VISIT_SESSION_KEY) === "true") return;
+    let isMounted = true;
 
-    setVisitCount((currentCount) => {
-      const nextCount = currentCount + 1;
-      window.localStorage.setItem(VISIT_STORAGE_KEY, String(nextCount));
-      window.sessionStorage.setItem(VISIT_SESSION_KEY, "true");
-      return nextCount;
-    });
+    recordVisit()
+      .then((nextCount) => {
+        if (!isMounted) return;
+        window.localStorage.setItem(VISIT_STORAGE_KEY, String(nextCount));
+        setVisitCount(nextCount);
+      })
+      .catch(() => {
+        if (window.sessionStorage.getItem(VISIT_SESSION_KEY) === "true") return;
+
+        setVisitCount((currentCount) => {
+          const nextCount = currentCount + 1;
+          window.localStorage.setItem(VISIT_STORAGE_KEY, String(nextCount));
+          window.sessionStorage.setItem(VISIT_SESSION_KEY, "true");
+          return nextCount;
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1159,5 +1184,5 @@ export default function App() {
     return <BoardListPage category={activeCategory} posts={posts.filter((post) => post.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
   }, [activeCategory, addComment, deletePost, detailId, handleLogin, handleLogout, isLoggedIn, navigate, path, posts, recommendationDateKey, visitCount]);
 
-  return <BlogLayout activeCategoryId={activeCategory.id} navigate={navigate}>{page}</BlogLayout>;
+  return <BlogLayout activeCategoryId={activeCategory.id} isHomeActive={path === "/"} navigate={navigate}>{page}</BlogLayout>;
 }
