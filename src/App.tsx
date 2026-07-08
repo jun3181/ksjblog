@@ -37,6 +37,7 @@ const youtubeRecommendationLinks = [
 
 const POSTS_STORAGE_KEY = "stack-chat-board-posts";
 const CATEGORIES_STORAGE_KEY = "stack-chat-categories";
+const AUTH_TOKEN_STORAGE_KEY = "stack-chat-admin-token";
 const POSTS_DB_NAME = "stack-chat-content";
 const POSTS_DB_STORE = "posts";
 const AUTH_STORAGE_KEY = "stack-chat-authenticated";
@@ -95,6 +96,24 @@ async function recordVisit() {
   if (!Number.isFinite(count)) throw new Error("Invalid visit count");
 
   return count;
+}
+
+async function loadRemoteContent() {
+  const response = await fetch("/api/content");
+  if (!response.ok) throw new Error("Failed to load content");
+  return response.json();
+}
+
+async function saveRemoteContent(posts, categories, adminToken) {
+  const response = await fetch("/api/content", {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${adminToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ posts, categories }),
+  });
+  if (!response.ok) throw new Error("Failed to save content");
 }
 
 function getTodayKey(date = new Date()) {
@@ -1206,23 +1225,34 @@ function LoginRequiredPage({ navigate }) {
 export default function App() {
   const { path, navigate } = usePath();
   const [posts, setPosts] = useState(loadStoredPosts);
-  const [isPostStorageReady, setIsPostStorageReady] = useState(false);
   const [categories, setCategories] = useState(loadStoredCategories);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => window.localStorage.getItem(AUTH_STORAGE_KEY) === "true");
+  const [adminToken, setAdminToken] = useState(() => window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || "");
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)));
+  const [isRemoteStorageReady, setIsRemoteStorageReady] = useState(false);
   const [visitCount, setVisitCount] = useState(getInitialVisitCount);
   const [recommendationDateKey, setRecommendationDateKey] = useState(getTodayKey);
 
   useEffect(() => {
     let isMounted = true;
 
-    loadPostsFromDatabase()
-      .then((storedPosts) => {
+    loadRemoteContent()
+      .then(async (storedContent) => {
         if (!isMounted) return;
-        if (Array.isArray(storedPosts)) setPosts(storedPosts);
-        setIsPostStorageReady(true);
+        const remotePosts = Array.isArray(storedContent.posts) ? storedContent.posts : [];
+        const remoteCategories = Array.isArray(storedContent.categories) ? storedContent.categories : [];
+        if (remotePosts.length > 0 || remoteCategories.length > 0) {
+          setPosts(remotePosts);
+          setCategories(remoteCategories.length > 0 ? remoteCategories : defaultCategories);
+        } else {
+          const browserPosts = await loadPostsFromDatabase().catch(() => []);
+          if (isMounted && Array.isArray(browserPosts) && browserPosts.length > 0) {
+            setPosts(browserPosts);
+          }
+        }
+        if (isMounted) setIsRemoteStorageReady(true);
       })
       .catch(() => {
-        if (isMounted) setIsPostStorageReady(true);
+        if (isMounted) setIsRemoteStorageReady(true);
       });
 
     return () => {
@@ -1231,11 +1261,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!isPostStorageReady) return;
-    savePostsToDatabase(posts).catch(() => {
-      window.alert("게시글을 저장하지 못했습니다. 사진 용량을 줄여 다시 시도해 주세요.");
+    if (!isRemoteStorageReady || !adminToken) return;
+    saveRemoteContent(posts, categories, adminToken).catch(() => {
+      window.alert("공용 데이터베이스에 저장하지 못했습니다.");
     });
-  }, [isPostStorageReady, posts]);
+  }, [adminToken, categories, isRemoteStorageReady, posts]);
 
   useEffect(() => {
     window.localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
@@ -1243,7 +1273,12 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(AUTH_STORAGE_KEY, isLoggedIn ? "true" : "false");
-  }, [isLoggedIn]);
+    if (adminToken) {
+      window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, adminToken);
+    } else {
+      window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    }
+  }, [adminToken, isLoggedIn]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1298,15 +1333,18 @@ export default function App() {
       });
       const result = await response.json().catch(() => ({ success: false }));
       const success = Boolean(response.ok && result.success);
+      setAdminToken(success ? result.token || "" : "");
       setIsLoggedIn(success);
       return success;
     } catch {
+      setAdminToken("");
       setIsLoggedIn(false);
       return false;
     }
   }, []);
 
   const handleLogout = useCallback(() => {
+    setAdminToken("");
     setIsLoggedIn(false);
   }, []);
 
@@ -1332,18 +1370,20 @@ export default function App() {
     navigate(`/boards/${post.categoryId}`);
   }, [navigate]);
 
-  const addComment = useCallback((postId, nickname, content) => {
-    setPosts((currentPosts) => currentPosts.map((post) => {
-      if (post.id !== postId) return post;
-
-      const nextComment = {
-        id: Date.now(),
-        nickname,
-        content,
-        createdAt: new Date().toLocaleString("ko-KR"),
-      };
-      return { ...post, comments: [...(Array.isArray(post.comments) ? post.comments : []), nextComment] };
-    }));
+  const addComment = useCallback(async (postId, nickname, content) => {
+    const nextComment = {
+      id: Date.now(),
+      nickname,
+      content,
+      createdAt: new Date().toLocaleString("ko-KR"),
+    };
+    const response = await fetch("/api/content?action=comment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, comment: nextComment }),
+    });
+    const result = await response.json();
+    if (response.ok && Array.isArray(result.posts)) setPosts(result.posts);
   }, []);
 
   const updatePost = useCallback((updatedPost) => {

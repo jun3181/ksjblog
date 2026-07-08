@@ -1,3 +1,5 @@
+import { createAdminToken } from "./_auth.js";
+
 export default function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -15,5 +17,8 @@ export default function handler(request, response) {
     password === expectedPassword,
   );
 
-  return response.status(success ? 200 : 401).json({ success });
+  return response.status(success ? 200 : 401).json({
+    success,
+    token: success ? createAdminToken() : undefined,
+  });
 }
