@@ -4,11 +4,12 @@ const categories = [
   { id: "daily", label: "일상 게시판" },
   { id: "health", label: "헬스" },
   { id: "dev", label: "개발 게시판" },
+  { id: "webtoon", label: "웹툰" },
 ];
 
 const menuGroups = [
   { id: 1, label: "게시판", type: "boards" },
-  { id: 2, label: "다른 목록", type: "placeholder" },
+  { id: 2, label: "웹툰", type: "webtoon" },
   { id: 3, label: "다른 목록", type: "placeholder" },
 ];
 
@@ -216,16 +217,19 @@ function BoardSidebar({ activeCategoryId, isHomeActive, navigate }) {
         {menuGroups.map((group) => (
           <section className="menu-group" key={`${group.id}-${group.label}`}>
             <button
-              className="menu-title"
+              className={`menu-title ${group.type === "webtoon" && activeCategoryId === "webtoon" ? "is-selected" : ""}`}
               type="button"
-              onClick={() => group.type === "boards" && navigate("/boards/daily")}
+              onClick={() => {
+                if (group.type === "boards") navigate("/boards/daily");
+                if (group.type === "webtoon") navigate("/boards/webtoon");
+              }}
             >
               <span>{group.id}. {group.label}</span>
             </button>
 
             {group.type === "boards" && (
               <div className="board-list" aria-label="게시판 세부 목록">
-                {categories.map((category) => (
+                {categories.filter((category) => category.id !== "webtoon").map((category) => (
                   <button
                     key={category.id}
                     className={`board-list-item ${!isHomeActive && category.id === activeCategoryId ? "is-selected" : ""}`}
@@ -333,7 +337,7 @@ function RecommendedSongCard({ song }) {
 }
 
 function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, recommendationDateKey }) {
-  const latestPosts = posts.slice(0, 3);
+  const latestPosts = posts.filter((post) => post.categoryId !== "webtoon").slice(0, 3);
   const recommendedSong = useMemo(() => getDailyRecommendedSong(recommendationDateKey), [recommendationDateKey]);
   const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히";
 
@@ -384,9 +388,11 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
 }
 
 function BoardListPage({ category, posts, navigate, onDeletePost, isLoggedIn }) {
+  const isWebtoon = category.id === "webtoon";
+
   function openEditor() {
     if (!isLoggedIn) {
-      window.alert("로그인 후 게시판 생성을 할 수 있습니다.");
+      window.alert(`로그인 후 ${isWebtoon ? "웹툰" : "게시판"} 생성을 할 수 있습니다.`);
       return;
     }
 
@@ -397,11 +403,11 @@ function BoardListPage({ category, posts, navigate, onDeletePost, isLoggedIn }) 
     <section className="board-panel" aria-labelledby="board-page-title">
       <div className="board-panel-header">
         <div>
-          <p className="eyebrow">게시판 세부 목록</p>
+          <p className="eyebrow">{isWebtoon ? "웹툰 목록" : "게시판 세부 목록"}</p>
           <h2 id="board-page-title">{category.label}</h2>
         </div>
         <button className={isLoggedIn ? "primary-button" : "primary-button is-locked"} type="button" onClick={openEditor}>
-          게시판 생성
+          {isWebtoon ? "웹툰 만들기" : "게시판 생성"}
         </button>
       </div>
 
@@ -976,7 +982,7 @@ function EditorPage({ category, onCreate, navigate }) {
   return (
     <section className={`editor-page ${isDrawingActive ? "is-paint-mode" : ""} ${hasBoardDrawing ? "has-board-drawing" : ""}`} aria-labelledby="editor-title">
       <div className="editor-topbar">
-        <strong>게시판</strong>
+        <strong>{category.id === "webtoon" ? "웹툰" : "게시판"}</strong>
         <div>
           <button className="text-button" type="button" onClick={() => navigate(`/boards/${category.id}`)}>취소</button>
           <button className="publish-button" type="button" onClick={submitPost}>발행</button>
