@@ -1,0 +1,22 @@
+import styles from './page.module.css';
+import Rocketgame from "@/public/projects/Rocketgame";
+
+export default function Home() {
+  return (
+    <div>
+      <p>홈페이지 처음생성했습니다</p>
+
+      <h2 className = "text-lg font-semibold">만든거 목록</h2>
+      <ul className = {styles['projects-list']}>
+        <li><a href = "/projects/미니미니샷건.html">미니미니샷건</a></li>
+        <li><a href = "/projects/사각형생성.html">사각형생성</a></li>
+        <li><a href = "https://cfghle.github.io/guitar.net/">Guitar.net</a></li>
+        <li><a href = "https://cfghle.github.io/Cfghle/">잡동사니 스페이스</a></li>
+        <li><a href = "/projects/cardgame/index.html">카드게임</a></li>
+      </ul>
+
+
+      <Rocketgame></Rocketgame>
+    </div>
+  );
+}
