@@ -422,7 +422,7 @@ function MainPage({ posts, categories, navigate, isLoggedIn, onLogin, onLogout, 
   );
   const latestPosts = posts.filter((post) => !webtoonCategoryIds.has(post.categoryId)).slice(0, 3);
   const recommendedSong = useMemo(() => getDailyRecommendedSong(recommendationDateKey), [recommendationDateKey]);
-  const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히";
+  const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히 \n 이 웹사이트는 ai도움을 받아 제 스스로 관리하는 웹 사이트입니다";
 
   return (
     <section className="main-panel" aria-labelledby="main-title">
@@ -617,6 +617,7 @@ function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate
   const [focusedTextBlockId, setFocusedTextBlockId] = useState(null);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [dragOverBlockId, setDragOverBlockId] = useState(null);
+  const [selectedMediaBlockId, setSelectedMediaBlockId] = useState(null);
   const [tool, setTool] = useState("brush");
   const [brushSize, setBrushSize] = useState(8);
   const [pendingText, setPendingText] = useState(null);
@@ -624,6 +625,25 @@ function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate
   const activeDrawingBlock = blocks.find((block) => block.id === activeDrawingId && block.type === "drawing");
   const hasBoardDrawing = blocks.some((block) => block.type === "drawing" || block.type === "image");
   const isDrawingActive = Boolean(activeDrawingBlock);
+
+  useEffect(() => {
+    function deleteSelectedMedia(event) {
+      if (!selectedMediaBlockId || (event.key !== "Delete" && event.key !== "Backspace")) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+
+      event.preventDefault();
+      setBlocks((currentBlocks) => {
+        const nextBlocks = currentBlocks.filter((block) => block.id !== selectedMediaBlockId);
+        return nextBlocks.length > 0 ? nextBlocks : [createTextBlock()];
+      });
+      if (activeDrawingId === selectedMediaBlockId) setActiveDrawingId(null);
+      setSelectedMediaBlockId(null);
+    }
+
+    window.addEventListener("keydown", deleteSelectedMedia);
+    return () => window.removeEventListener("keydown", deleteSelectedMedia);
+  }, [activeDrawingId, selectedMediaBlockId]);
 
   const prepareContext = useCallback((context, selectedTool) => {
     context.lineCap = "round";
@@ -1059,7 +1079,7 @@ function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate
   }
 
   function submitPost() {
-    if (!title.trim()) return;
+    const publishedTitle = title.trim() || "제목 없음";
     const id = initialPost?.id || Date.now();
     const publishedBlocks = blocks
       .map((block) => (
@@ -1076,7 +1096,7 @@ function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate
       ...initialPost,
       id,
       categoryId: category.id,
-      title,
+      title: publishedTitle,
       author: initialPost?.author || "작성자",
       createdAt: initialPost?.createdAt || new Date().toLocaleDateString("ko-KR"),
       excerpt: content.slice(0, 56) || (drawing ? "그림판이 포함된 글입니다." : "새 글입니다."),
@@ -1135,7 +1155,16 @@ function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate
           {blocks.map((block) => (
             <div className={`editor-block editor-block-${block.type} ${dragOverBlockId === block.id ? "is-drag-over" : ""}`} data-editor-block-id={block.id} key={block.id}>
               {block.type === "image" ? (
-                <div className="editor-image-frame" onPointerDown={(event) => startMediaPointerDrag(event, block.id)} onPointerMove={moveMediaPointer} onPointerUp={stopMediaPointerDrag} onPointerCancel={stopMediaPointerDrag} onMouseDown={(event) => startMediaMouseDrag(event, block.id)}>
+                <div
+                  className={`editor-image-frame ${selectedMediaBlockId === block.id ? "is-selected" : ""}`}
+                  tabIndex="0"
+                  onClick={() => setSelectedMediaBlockId(block.id)}
+                  onPointerDown={(event) => startMediaPointerDrag(event, block.id)}
+                  onPointerMove={moveMediaPointer}
+                  onPointerUp={stopMediaPointerDrag}
+                  onPointerCancel={stopMediaPointerDrag}
+                  onMouseDown={(event) => startMediaMouseDrag(event, block.id)}
+                >
                   <img className="editor-image-block" src={block.src} alt="첨부 이미지" draggable={false} />
                 </div>
               ) : block.type === "drawing" ? (

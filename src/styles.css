@@ -857,10 +857,16 @@ canvas {
   display: block;
   width: 100%;
   padding: 16px;
+  border: 2px solid transparent;
   background: #eeeeee;
   cursor: grab;
   touch-action: none;
   user-select: none;
+}
+
+.editor-image-frame.is-selected {
+  border-color: #111111;
+  background: #dddddd;
 }
 
 .editor-image-frame:active,
