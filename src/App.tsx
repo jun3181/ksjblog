@@ -116,6 +116,53 @@ async function saveRemoteContent(posts, categories, adminToken) {
   if (!response.ok) throw new Error("Failed to save content");
 }
 
+function compressImageDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const maxWidth = 1600;
+      const scale = Math.min(1, maxWidth / image.naturalWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/webp", 0.82));
+    };
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+async function uploadRemoteMedia(dataUrl, adminToken) {
+  if (!dataUrl?.startsWith("data:image/")) return dataUrl;
+  const compressedDataUrl = await compressImageDataUrl(dataUrl);
+  const response = await fetch("/api/media", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${adminToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ dataUrl: compressedDataUrl }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.url) throw new Error("Failed to upload media");
+  return result.url;
+}
+
+async function preparePostsForRemoteStorage(posts, adminToken) {
+  return Promise.all(posts.map(async (post) => {
+    const blocks = await Promise.all(getPostBlocks(post).map(async (block) => (
+      block.src ? { ...block, src: await uploadRemoteMedia(block.src, adminToken) } : block
+    )));
+    return {
+      ...post,
+      blocks,
+      image: blocks.find((block) => block.type === "image")?.src || "",
+      drawing: blocks.find((block) => block.type === "drawing")?.src || "",
+    };
+  }));
+}
+
 function getTodayKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1262,9 +1309,22 @@ export default function App() {
 
   useEffect(() => {
     if (!isRemoteStorageReady || !adminToken) return;
-    saveRemoteContent(posts, categories, adminToken).catch(() => {
-      window.alert("공용 데이터베이스에 저장하지 못했습니다.");
-    });
+    let isCancelled = false;
+
+    preparePostsForRemoteStorage(posts, adminToken)
+      .then(async (remotePosts) => {
+        await saveRemoteContent(remotePosts, categories, adminToken);
+        if (!isCancelled && JSON.stringify(remotePosts) !== JSON.stringify(posts)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) window.alert("공용 데이터베이스에 저장하지 못했습니다.");
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [adminToken, categories, isRemoteStorageReady, posts]);
 
   useEffect(() => {
