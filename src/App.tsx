@@ -12,36 +12,6 @@ const menuGroups = [
   { id: 3, label: "다른 목록", type: "placeholder" },
 ];
 
-const initialPosts = [
-  {
-    id: 101,
-    categoryId: "daily",
-    title: "오늘의 작은 기록",
-    author: "관리자",
-    createdAt: "2026.07.07",
-    excerpt: "새 게시판에서 일상의 순간을 편하게 남겨보세요.",
-    content: "사진과 글을 함께 올리고, 필요한 곳에는 그림판 메모도 남길 수 있습니다.",
-  },
-  {
-    id: 102,
-    categoryId: "health",
-    title: "초보자를 위한 전신 루틴",
-    author: "트레이너",
-    createdAt: "2026.07.07",
-    excerpt: "스쿼트, 푸시업, 플랭크를 중심으로 가볍게 시작합니다.",
-    content: "운동 전후 스트레칭을 충분히 하고 자신의 컨디션에 맞춰 횟수를 조절하세요.",
-  },
-  {
-    id: 103,
-    categoryId: "dev",
-    title: "React 게시판 에디터 메모",
-    author: "개발자",
-    createdAt: "2026.07.07",
-    excerpt: "글꼴, 글자 크기, 이미지, 그림판 생성을 한 화면에서 다룹니다.",
-    content: "네이버 블로그 에디터는 참고만 하고, 필요한 작성 기능을 이 프로젝트 스타일로 구현했습니다.",
-  },
-];
-
 const fonts = [
   { label: "기본", value: "Arial, 'Noto Sans KR', sans-serif" },
   { label: "명조", value: "Georgia, 'Noto Serif KR', serif" },
@@ -189,14 +159,17 @@ function getDailyRecommendedSong(dateKey) {
 }
 
 function loadStoredPosts() {
+  const removedSamplePostIds = new Set([101, 102, 103]);
   const storedPosts = window.localStorage.getItem(POSTS_STORAGE_KEY);
-  if (!storedPosts) return initialPosts;
+  if (!storedPosts) return [];
 
   try {
     const parsedPosts = JSON.parse(storedPosts);
-    return Array.isArray(parsedPosts) ? parsedPosts : initialPosts;
+    return Array.isArray(parsedPosts)
+      ? parsedPosts.filter((post) => !removedSamplePostIds.has(post.id))
+      : [];
   } catch {
-    return initialPosts;
+    return [];
   }
 }
 
