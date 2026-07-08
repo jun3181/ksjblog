@@ -974,15 +974,31 @@ function EditorPage({ category, onCreate, navigate }) {
     }, "image/png");
   }
 
-  function handleImage(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function insertImageFile(file, onComplete) {
     const reader = new FileReader();
     reader.onload = () => {
       insertMediaBlockAfterText(createImageBlock(reader.result));
-      event.target.value = "";
+      onComplete?.();
     };
     reader.readAsDataURL(file);
+  }
+
+  function handleImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    insertImageFile(file, () => {
+      event.target.value = "";
+    });
+  }
+
+  function handleImagePaste(event) {
+    const imageItem = Array.from(event.clipboardData?.items || [])
+      .find((item) => item.type.startsWith("image/"));
+    const imageFile = imageItem?.getAsFile();
+    if (!imageFile) return;
+
+    event.preventDefault();
+    insertImageFile(imageFile);
   }
 
   function submitPost() {
@@ -1050,7 +1066,7 @@ function EditorPage({ category, onCreate, navigate }) {
         </div>
       )}
 
-      <div className="paper">
+      <div className="paper" onPaste={handleImagePaste}>
         <input id="editor-title" className="title-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="제목" />
         <div className="editor-blocks">
           {blocks.map((block) => (
