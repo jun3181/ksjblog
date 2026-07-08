@@ -534,7 +534,12 @@ function PostDetailPage({ post, navigate, onDeletePost, onAddComment, isLoggedIn
     <article className="board-panel post-detail">
       <div className="post-detail-actions">
         <button className="text-button" type="button" onClick={() => navigate(`/boards/${post.categoryId}`)}>← 목록으로</button>
-        {isLoggedIn && <button className="delete-button" type="button" onClick={() => onDeletePost(post)}>삭제</button>}
+        {isLoggedIn && (
+          <div>
+            <button className="text-button" type="button" onClick={() => navigate(`/${post.id}/edit`)}>수정</button>
+            <button className="delete-button" type="button" onClick={() => onDeletePost(post)}>삭제</button>
+          </div>
+        )}
       </div>
       <h2>{post.title}</h2>
       <p className="post-meta">{post.author} · {post.createdAt}</p>
@@ -593,15 +598,19 @@ function EditorTextBlock({ block, fontFamily, fontSize, onChange, onFocus }) {
   );
 }
 
-function EditorPage({ category, onCreate, navigate }) {
+function EditorPage({ category, initialPost = null, onCreate, onUpdate, navigate }) {
   const canvasRef = useRef(null);
   const drawingRef = useRef(false);
   const historyRef = useRef([]);
   const textInputRef = useRef(null);
   const dragStateRef = useRef({ blockId: null, moved: false, startX: 0, startY: 0 });
   const suppressMediaClickRef = useRef(false);
-  const [title, setTitle] = useState("");
-  const [blocks, setBlocks] = useState(() => [createTextBlock()]);
+  const [title, setTitle] = useState(() => initialPost?.title || "");
+  const [blocks, setBlocks] = useState(() => {
+    if (!initialPost) return [createTextBlock()];
+    const initialBlocks = getPostBlocks(initialPost);
+    return initialBlocks.length > 0 ? initialBlocks : [createTextBlock()];
+  });
   const [fontFamily, setFontFamily] = useState(fonts[0].value);
   const [fontSize, setFontSize] = useState(18);
   const [activeDrawingId, setActiveDrawingId] = useState(null);
@@ -1051,7 +1060,7 @@ function EditorPage({ category, onCreate, navigate }) {
 
   function submitPost() {
     if (!title.trim()) return;
-    const id = Date.now();
+    const id = initialPost?.id || Date.now();
     const publishedBlocks = blocks
       .map((block) => (
         block.id === activeDrawingId && canvasRef.current
@@ -1063,18 +1072,24 @@ function EditorPage({ category, onCreate, navigate }) {
     const image = publishedBlocks.find((block) => block.type === "image")?.src || "";
     const drawing = publishedBlocks.find((block) => block.type === "drawing")?.src || "";
 
-    onCreate({
+    const nextPost = {
+      ...initialPost,
       id,
       categoryId: category.id,
       title,
-      author: "작성자",
-      createdAt: new Date().toLocaleDateString("ko-KR"),
+      author: initialPost?.author || "작성자",
+      createdAt: initialPost?.createdAt || new Date().toLocaleDateString("ko-KR"),
       excerpt: content.slice(0, 56) || (drawing ? "그림판이 포함된 글입니다." : "새 글입니다."),
       content,
       image,
       drawing,
       blocks: publishedBlocks,
-    });
+    };
+    if (initialPost) {
+      onUpdate(nextPost);
+    } else {
+      onCreate(nextPost);
+    }
     navigate(`/${id}`);
   }
 
@@ -1084,7 +1099,7 @@ function EditorPage({ category, onCreate, navigate }) {
         <strong>{category.groupType === "webtoon" ? "웹툰" : "게시판"}</strong>
         <div>
           <button className="text-button" type="button" onClick={() => navigate(`/boards/${category.id}`)}>취소</button>
-          <button className="publish-button" type="button" onClick={submitPost}>발행</button>
+          <button className="publish-button" type="button" onClick={submitPost}>{initialPost ? "수정 완료" : "발행"}</button>
         </div>
       </div>
       <div className="editor-toolbar" aria-label="작성 도구">
@@ -1303,18 +1318,31 @@ export default function App() {
     }));
   }, []);
 
+  const updatePost = useCallback((updatedPost) => {
+    setPosts((currentPosts) => currentPosts.map((post) => (
+      post.id === updatedPost.id ? updatedPost : post
+    )));
+  }, []);
+
   const page = useMemo(() => {
     if (path === "/") return <MainPage posts={posts} categories={categories} navigate={navigate} isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} visitCount={visitCount} recommendationDateKey={recommendationDateKey} />;
     if (path.endsWith("/new")) {
       if (!isLoggedIn) return <LoginRequiredPage navigate={navigate} />;
       return <EditorPage category={activeCategory} onCreate={(post) => setPosts((current) => [post, ...current])} navigate={navigate} />;
     }
+    if (path.endsWith("/edit") && detailId) {
+      if (!isLoggedIn) return <LoginRequiredPage navigate={navigate} />;
+      const post = posts.find((item) => String(item.id) === detailId);
+      return post
+        ? <EditorPage category={activeCategory} initialPost={post} onUpdate={updatePost} navigate={navigate} />
+        : <BoardListPage category={activeCategory} posts={posts.filter((postItem) => postItem.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
+    }
     if (detailId) {
       const post = posts.find((item) => String(item.id) === detailId);
       return post ? <PostDetailPage post={post} navigate={navigate} onDeletePost={deletePost} onAddComment={addComment} isLoggedIn={isLoggedIn} /> : <BoardListPage category={activeCategory} posts={posts.filter((postItem) => postItem.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
     }
     return <BoardListPage category={activeCategory} posts={posts.filter((post) => post.categoryId === activeCategory.id)} navigate={navigate} onDeletePost={deletePost} isLoggedIn={isLoggedIn} />;
-  }, [activeCategory, addComment, categories, deletePost, detailId, handleLogin, handleLogout, isLoggedIn, navigate, path, posts, recommendationDateKey, visitCount]);
+  }, [activeCategory, addComment, categories, deletePost, detailId, handleLogin, handleLogout, isLoggedIn, navigate, path, posts, recommendationDateKey, updatePost, visitCount]);
 
   return (
     <BlogLayout

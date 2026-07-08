@@ -1016,6 +1016,11 @@ canvas {
   gap: 12px;
 }
 
+.post-detail-actions > div {
+  display: flex;
+  gap: 8px;
+}
+
 .comment-section {
   margin-top: 34px;
   padding-top: 24px;
