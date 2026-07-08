@@ -417,10 +417,7 @@ function RecommendedSongCard({ song }) {
 }
 
 function MainPage({ posts, categories, navigate, isLoggedIn, onLogin, onLogout, visitCount, recommendationDateKey }) {
-  const webtoonCategoryIds = new Set(
-    categories.filter((category) => category.groupType === "webtoon").map((category) => category.id),
-  );
-  const latestPosts = posts.filter((post) => !webtoonCategoryIds.has(post.categoryId)).slice(0, 3);
+  const latestPosts = posts.slice(0, 3);
   const recommendedSong = useMemo(() => getDailyRecommendedSong(recommendationDateKey), [recommendationDateKey]);
   const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히 \n 이 웹사이트는 ai도움을 받아 제 스스로 관리하는 웹 사이트입니다";
 
@@ -449,7 +446,9 @@ function MainPage({ posts, categories, navigate, isLoggedIn, onLogin, onLogout, 
             <h3>새로운 게시판</h3>
             <div className="main-card-list">
               {latestPosts.length > 0 ? latestPosts.map((post) => (
-                <button key={post.id} type="button" onClick={() => navigate(`/${post.id}`)}>{post.title}</button>
+                <button key={post.id} type="button" onClick={() => navigate(`/${post.id}`)}>
+                  {categories.find((category) => category.id === post.categoryId)?.label || "게시판"} : {post.title}
+                </button>
               )) : <span>새 게시글이 없습니다.</span>}
             </div>
           </article>
