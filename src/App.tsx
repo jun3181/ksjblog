@@ -68,8 +68,6 @@ const POSTS_STORAGE_KEY = "stack-chat-board-posts";
 const AUTH_STORAGE_KEY = "stack-chat-authenticated";
 const VISIT_STORAGE_KEY = "stack-chat-visit-count";
 const VISIT_SESSION_KEY = "stack-chat-visited-session";
-const LOGIN_ID = import.meta.env.VITE_LOGIN_ID || "";
-const LOGIN_PASSWORD = import.meta.env.VITE_LOGIN_PASSWORD || "";
 const DEFAULT_DRAWING_HEIGHT = 420;
 const DRAWING_HEIGHT_STEP = 80;
 const MIN_DRAWING_HEIGHT = 260;
@@ -282,14 +280,18 @@ function LoginPanel({ isLoggedIn, onLogin, onLogout }) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function submitLogin(event) {
+  async function submitLogin(event) {
     event.preventDefault();
-    const success = onLogin(loginId.trim(), password);
+    setIsSubmitting(true);
+    setError("");
+    const success = await onLogin(loginId.trim(), password);
+    setIsSubmitting(false);
+
     if (success) {
       setLoginId("");
       setPassword("");
-      setError("");
       return;
     }
 
@@ -313,7 +315,7 @@ function LoginPanel({ isLoggedIn, onLogin, onLogout }) {
         <input value={loginId} onChange={(event) => setLoginId(event.target.value)} placeholder="아이디" aria-label="아이디" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" aria-label="비밀번호" type="password" />
         {error && <p className="login-error">{error}</p>}
-        <button className="publish-button" type="submit">로그인</button>
+        <button className="publish-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "확인 중" : "로그인"}</button>
       </form>
     </aside>
   );
@@ -1101,10 +1103,21 @@ export default function App() {
   const activeCategoryId = categoryFromPath || posts.find((post) => String(post.id) === detailId)?.categoryId || "daily";
   const activeCategory = categories.find((category) => category.id === activeCategoryId) || categories[0];
 
-  const handleLogin = useCallback((loginId, password) => {
-    const success = Boolean(LOGIN_ID && LOGIN_PASSWORD && loginId === LOGIN_ID && password === LOGIN_PASSWORD);
-    setIsLoggedIn(success);
-    return success;
+  const handleLogin = useCallback(async (loginId, password) => {
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loginId, password }),
+      });
+      const result = await response.json().catch(() => ({ success: false }));
+      const success = Boolean(response.ok && result.success);
+      setIsLoggedIn(success);
+      return success;
+    } catch {
+      setIsLoggedIn(false);
+      return false;
+    }
   }, []);
 
   const handleLogout = useCallback(() => {
