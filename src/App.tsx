@@ -362,6 +362,7 @@ function RecommendedSongCard({ song }) {
 function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, recommendationDateKey }) {
   const latestPosts = posts.slice(0, 3);
   const recommendedSong = useMemo(() => getDailyRecommendedSong(recommendationDateKey), [recommendationDateKey]);
+  const operatorIntroduction = "태어냔 년도 : 2002년 \n 취미 : 요리 \n 힘들어도 열심히";
 
   return (
     <section className="main-panel" aria-labelledby="main-title">
@@ -371,6 +372,20 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
       </div>
       <div className="main-content">
         <div className="main-card-grid">
+          <article className="main-card operator-card">
+            <img
+              className="operator-profile"
+              src="/images/profilel.png"
+              alt="운영자 프로필"
+              onError={(event) => {
+                event.currentTarget.hidden = true;
+              }}
+            />
+            <div>
+              <h3>운영자 소개</h3>
+              <p>{operatorIntroduction}</p>
+            </div>
+          </article>
           <article className="main-card">
             <h3>새로운 게시판</h3>
             <div className="main-card-list">
@@ -388,7 +403,6 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
           <article className="main-card">
             <h3>방문자 수</h3>
             <p className="visit-count">{visitCount.toLocaleString("ko-KR")}</p>
-            <small>같은 IP는 한 번만 집계</small>
           </article>
         </div>
         <LoginPanel isLoggedIn={isLoggedIn} onLogin={onLogin} onLogout={onLogout} />

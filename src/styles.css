@@ -209,6 +209,25 @@ canvas {
   font-size: 1.08rem;
 }
 
+.operator-card {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.operator-profile {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border: 1px solid #dedede;
+}
+
+.operator-card p {
+  white-space: pre-line;
+}
+
 .main-card p {
   margin: 0 0 8px;
   line-height: 1.6;
@@ -499,6 +518,10 @@ canvas {
 
   .main-content,
   .main-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operator-card {
     grid-template-columns: 1fr;
   }
 
