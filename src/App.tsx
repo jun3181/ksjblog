@@ -285,7 +285,7 @@ function LoginPanel({ isLoggedIn, onLogin, onLogout }) {
   if (isLoggedIn) {
     return (
       <aside className="login-panel" aria-label="로그인 정보">
-        <strong>로그인됨</strong>
+        <strong>관리자 로그인</strong>
         <p>게시판 생성이 가능합니다.</p>
         <button className="publish-button" type="button" onClick={onLogout}>로그아웃</button>
       </aside>
@@ -294,7 +294,7 @@ function LoginPanel({ isLoggedIn, onLogin, onLogout }) {
 
   return (
     <aside className="login-panel" aria-label="로그인">
-      <strong>로그인</strong>
+      <strong>관리자 로그인</strong>
       <form className="login-form" onSubmit={submitLogin}>
         <input value={loginId} onChange={(event) => setLoginId(event.target.value)} placeholder="아이디" aria-label="아이디" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" aria-label="비밀번호" type="password" />
@@ -340,7 +340,6 @@ function MainPage({ posts, navigate, isLoggedIn, onLogin, onLogout, visitCount, 
   return (
     <section className="main-panel" aria-labelledby="main-title">
       <div className="main-header">
-        <p className="eyebrow">Stack Chat</p>
         <h2 id="main-title">메인</h2>
       </div>
       <div className="main-content">
